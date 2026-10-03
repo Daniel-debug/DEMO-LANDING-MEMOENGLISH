@@ -192,6 +192,14 @@ body.is-locked{overflow:hidden}
 .drawer .btn{margin-top:16px}
 @media (min-width:980px){ .drawer{display:none} }
 
+/* fondo detrás del menú móvil: tocarlo cierra el menú */
+.drawer-backdrop{
+  position:fixed; inset:0; z-index:79; background:rgba(19,30,41,.45);
+  opacity:0; visibility:hidden; transition:opacity .3s ease, visibility .3s;
+}
+.drawer-backdrop.is-on{opacity:1; visibility:visible}
+@media (min-width:980px){ .drawer-backdrop{display:none} }
+
 .headprogress{height:2px; background:transparent}
 .headprogress i{display:block; height:100%; width:0; background:var(--yellow); transition:width .12s linear}
 
@@ -791,6 +799,7 @@ body.is-locked{overflow:hidden}
 
   <div class="headprogress" aria-hidden="true"><i id="headProgress"></i></div>
 </header>
+<div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
 
 <main id="inicio">
   <!-- ===== HERO ===== -->
@@ -1425,19 +1434,31 @@ body.is-locked{overflow:hidden}
   /* ---------- menú móvil ---------- */
   var burger = document.getElementById('burger');
   var drawer = document.getElementById('drawer');
-  burger.addEventListener('click', function(){
-    var open = drawer.classList.toggle('is-open');
+  var backdrop = document.getElementById('drawerBackdrop');
+  function setMenu(open){
+    drawer.classList.toggle('is-open', open);
+    backdrop.classList.toggle('is-on', open);
     burger.setAttribute('aria-expanded', String(open));
     burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
     document.body.classList.toggle('is-locked', open);
+    if (!open) onScroll();
+  }
+  burger.addEventListener('click', function(e){
+    e.stopPropagation();
+    setMenu(!drawer.classList.contains('is-open'));
   });
   drawer.querySelectorAll('a').forEach(function(a){
-    a.addEventListener('click', function(){
-      drawer.classList.remove('is-open');
-      document.body.classList.remove('is-locked');
-      burger.setAttribute('aria-expanded','false');
-      onScroll();
-    });
+    a.addEventListener('click', function(){ setMenu(false); });
+  });
+  /* cerrar al tocar fuera del menú (fondo, resto del encabezado o página) */
+  backdrop.addEventListener('click', function(){ setMenu(false); });
+  document.addEventListener('click', function(e){
+    if (drawer.classList.contains('is-open') && !drawer.contains(e.target) && !burger.contains(e.target)){
+      setMenu(false);
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && drawer.classList.contains('is-open')){ setMenu(false); burger.focus(); }
   });
 
   var navlinks = document.getElementById('navlinks');
